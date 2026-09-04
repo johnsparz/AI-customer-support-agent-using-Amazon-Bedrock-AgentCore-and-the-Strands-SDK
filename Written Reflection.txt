@@ -1,0 +1,13 @@
+Reflection: CustomerSupportAgent
+
+
+
+Design decision: separate knowledge base from memory. The agent handles two different types of questions. Questions about policies ("what discount does Platinum get?") need the current knowledge base because that info changes. Questions about individual customers ("how does Jane like to be contacted?") need long-term memory because that's personal history. Mixing them together would work briefly but breaks when policies update or when a customer returns in a new session. Keeping them separate meant tests 3 and 4 actually tested different things.
+
+
+
+Challenge: the browser tool. The tool code was fine, but it hit a permission error when trying to execute a bundled driver. Playwright includes a Node binary packed inside its Python package, and Lambda's zip deployment marks files read-only. The binary couldn't run. I switched to a pure Python approach: websocket-client talks directly to the browser protocol without needing any native executable. No compiled code, no permission issues.
+
+
+
+Production extension: add output validation. Right now the agent returns raw text to the user, which works but isn't reliable for downstream systems. In production, define Pydantic models for each tool response (e.g., OrderStatus, DiscountBreakdown, LoyaltyPoints) and validate agent outputs against them before returning. This catches malformed or incomplete responses early, ensures the API contract stays consistent, and makes it safe for other services to consume the agent's replies. It's the difference between "the agent said something" and "the agent said something correct and shaped right."
